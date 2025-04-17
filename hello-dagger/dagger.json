@@ -1,0 +1,14 @@
+{
+  "name": "hello-dagger",
+  "engineVersion": "v0.18.3",
+  "sdk": {
+    "source": "go"
+  },
+  "dependencies": [
+    {
+      "name": "trivy",
+      "source": "../toolkit/trivy"
+    }
+  ],
+  "source": ".dagger"
+}
