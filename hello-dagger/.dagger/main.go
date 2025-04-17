@@ -14,7 +14,7 @@ type HelloDagger struct{}
 // Publish the application container after building and testing it on-the-fly
 func (m *HelloDagger) Publish(
 	ctx context.Context,
-	// +defaultPath="/"
+	// +defaultPath="/hello-dagger"
 	source *dagger.Directory,
 ) (string, error) {
 	_, err := m.Test(ctx, source)
@@ -27,7 +27,7 @@ func (m *HelloDagger) Publish(
 
 // Build the application container
 func (m *HelloDagger) Build(
-	// +defaultPath="/"
+	// +defaultPath="/hello-dagger"
 	source *dagger.Directory,
 ) *dagger.Container {
 	build := m.BuildEnv(source).
@@ -41,7 +41,7 @@ func (m *HelloDagger) Build(
 // Return the result of running unit tests
 func (m *HelloDagger) Test(
 	ctx context.Context,
-	// +defaultPath="/"
+	// +defaultPath="/hello-dagger"
 	source *dagger.Directory,
 ) (string, error) {
 	return m.BuildEnv(source).
@@ -51,7 +51,7 @@ func (m *HelloDagger) Test(
 
 // Build a ready-to-use development environment
 func (m *HelloDagger) BuildEnv(
-	// +defaultPath="/"
+	// +defaultPath="/hello-dagger"
 	source *dagger.Directory,
 ) *dagger.Container {
 	nodeCache := dag.CacheVolume("node")
