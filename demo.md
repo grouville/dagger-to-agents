@@ -19,7 +19,7 @@ __Aim__ => show the capabilities of the shell mode with useful example
 
 ```yaml
 # Engine version:
-# github.com/grouville/dagger/tree/rebased-for-mcp
+# https://github.com/grouville/dagger/commit/04f50b6e5899b5b25adaceaae12f9a5bac31ef18
 
 # Current demo commit:
 # https://github.com/grouville/dagger-to-agents/commit/f357683433f6df01de20f0ff0157cf0759c068bd
