@@ -20,15 +20,26 @@ import (
 	"npm/internal/dagger"
 )
 
-type Npm struct{}
+type Npm struct{
+	Ctr *dagger.Container
+}
+
+func New(
+	// +optional
+	ctr *dagger.Container,
+) *Npm {
+	if ctr == nil {
+		ctr = dag.Container().From("node")
+	}
+	return &Npm{ctr}
+}
 
 // Coverage runs the Vitest coverage command and returns its stdout
 func (m *Npm) Coverage(
 	ctx context.Context,
-	npm *dagger.Container,
 	// +defaultPath="/"
 	source *dagger.Directory,
 ) (string, error) {
 	// TODO: add npm cache ?
-	return npm.WithMountedDirectory("/src", source).WithWorkdir("/src").WithExec([]string{"npx", "vitest", "run", "--coverage"}).Stdout(ctx)
+	return m.Ctr.WithMountedDirectory("/src", source).WithWorkdir("/src").WithExec([]string{"npx", "vitest", "run", "--coverage"}).Stdout(ctx)
 }
