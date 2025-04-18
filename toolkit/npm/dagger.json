@@ -1,6 +1,6 @@
 {
   "name": "npm",
-  "engineVersion": "v0.18.4-250416155333-f64612f5fce9",
+  "engineVersion": "v0.18.3",
   "sdk": {
     "source": "go"
   }

@@ -1,4 +1,4 @@
-module dagger/npm
+module npm
 
 go 1.23.6
 

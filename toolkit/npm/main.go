@@ -14,35 +14,20 @@
 
 package main
 
-import "dagger/npm/internal/dagger"
-
-type Npm struct{}
-
-package testutils
-
 import (
 	"context"
 
-	"dagger/hello-dagger/internal/dagger"
+	"npm/internal/dagger"
 )
 
 type Npm struct{}
 
 // Coverage runs the Vitest coverage command and returns its stdout
-func (m *TestUtils) Coverage(
+func (m *Npm) Coverage(
 	ctx context.Context,
-	env *dagger.Container,
+	npm *dagger.Container,
 	// +defaultPath="/"
 	source *dagger.Directory,
 ) *dagger.Container {
-	return env.WithMountedDirectory("/src", source).WithWorkdir("/src").WithExec([]string{"npx", "vitest", "run", "--coverage"})
+	return npm.WithMountedDirectory("/src", source).WithWorkdir("/src").WithExec([]string{"npx", "vitest", "run", "--coverage"})
 }
-
-// func (m *TestUtils) CoverageFromEnv(
-// 	ctx context.Context,
-// 	env *dagger.Container,
-// ) (string, error) {
-// 	return env.
-// 		WithExec([]string{"npx", "vitest", "run", "--coverage"}).
-// 		Stdout(ctx)
-// }
