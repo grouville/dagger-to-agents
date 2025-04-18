@@ -28,6 +28,7 @@ func (m *Npm) Coverage(
 	npm *dagger.Container,
 	// +defaultPath="/"
 	source *dagger.Directory,
-) *dagger.Container {
-	return npm.WithMountedDirectory("/src", source).WithWorkdir("/src").WithExec([]string{"npx", "vitest", "run", "--coverage"})
+) (string, error) {
+	// TODO: add npm cache ?
+	return npm.WithMountedDirectory("/src", source).WithWorkdir("/src").WithExec([]string{"npx", "vitest", "run", "--coverage"}).Stdout(ctx)
 }
