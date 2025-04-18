@@ -7,7 +7,8 @@
   "dependencies": [
     {
       "name": "trivy",
-      "source": "../toolkit/trivy"
+      "source": "github.com/grouville/dagger-to-agents/toolkit/trivy",
+      "pin": "fbcaf008bdd9ea053a4b091e0db7ac79d632f116"
     }
   ],
   "source": ".dagger"
