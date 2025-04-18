@@ -8,7 +8,7 @@
     {
       "name": "npm",
       "source": "github.com/grouville/dagger-to-agents/toolkit/npm",
-      "pin": "b3c86514a84fbf2099b72a13b4061d084623c435"
+      "pin": "2b409943e023503b22024533c12e63ba2306c031"
     },
     {
       "name": "trivy",
