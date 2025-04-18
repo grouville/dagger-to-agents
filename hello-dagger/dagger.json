@@ -6,11 +6,6 @@
   },
   "dependencies": [
     {
-      "name": "npm",
-      "source": "github.com/grouville/dagger-to-agents/toolkit/npm",
-      "pin": "4862c8948c4f0fe8ddf0ddb09e1d21bc738f6824"
-    },
-    {
       "name": "trivy",
       "source": "github.com/grouville/dagger-to-agents/toolkit/trivy",
       "pin": "fbcaf008bdd9ea053a4b091e0db7ac79d632f116"
