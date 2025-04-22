@@ -17,7 +17,7 @@ type Npm struct {
 func New(
 	// +optional
 	ctr *dagger.Container,
-	// +defaultPath="/"
+	// +defaultPath="/hello-dagger"
 	source *dagger.Directory,
 ) *Npm {
 	if ctr == nil {

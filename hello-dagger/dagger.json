@@ -1,14 +1,17 @@
 {
   "name": "hello-dagger",
-  "engineVersion": "v0.18.3",
+  "engineVersion": "v0.18.4-250422121411-f6ed72e413cd",
   "sdk": {
     "source": "go"
   },
   "dependencies": [
     {
+      "name": "npm",
+      "source": "../toolkit/npm"
+    },
+    {
       "name": "trivy",
-      "source": "github.com/grouville/dagger-to-agents/toolkit/trivy",
-      "pin": "fbcaf008bdd9ea053a4b091e0db7ac79d632f116"
+      "source": "../toolkit/trivy"
     }
   ],
   "source": ".dagger"
