@@ -392,7 +392,7 @@ func (e *EvalRunner) GooseTrivyScan(
 ) (*EvalReport, error) {
 	ctr := e.gooseCtr(ctx, target)
 	ctr = ctr.WithWorkdir("/root").
-		WithNewFile("llm-history", "").
+		WithNewFile("llm-history", `{"working_dir":"/root","description":"Initial greeting exchange","message_count":2,"total_tokens":687,"input_tokens":673,"output_tokens":14,"accumulated_total_tokens":1373,"accumulated_input_tokens":1346,"accumulated_output_tokens":27}`).
 		WithExec(sh("goose run -p llm-history -r -t hi"), dagger.ContainerWithExecOpts{ExperimentalPrivilegedNesting: true})
 	out, err := ctr.Stdout(ctx)
 	return nil, fmt.Errorf("debugging: %w\nout: %s\n", err, out)
