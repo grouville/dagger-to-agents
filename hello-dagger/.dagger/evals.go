@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	_ "embed"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -23,6 +24,9 @@ type EvalRunner struct {
 	Model        string
 	Attempt      int // >0, monotonically increasing so you can easily distinguish attempts
 	SystemPrompt string
+	Goose        bool
+	DaggerCli    *dagger.File
+	LLMKey       *dagger.Secret
 }
 
 func NewEvalRunner() *EvalRunner {
@@ -43,6 +47,11 @@ func (m *EvalRunner) WithModel(model string) *EvalRunner {
 
 func (m *EvalRunner) WithSystemPrompt(prompt string) *EvalRunner {
 	m.SystemPrompt = prompt
+	return m
+}
+
+func (m *EvalRunner) WithGoose() *EvalRunner {
+	m.Goose = true
 	return m
 }
 
@@ -353,6 +362,40 @@ func (e *EvalRunner) NPMAudit(
 			// },
 		}...,
 	)
+}
+
+//go:embed goose-config.yaml
+var gooseConfig string
+
+//go:embed mcp.sh
+var mcpSh string
+
+func sh(s string) []string {
+	return []string{"sh", "-c", s}
+}
+
+func (e *EvalRunner) gooseCtr(ctx context.Context, target *dagger.Directory) *dagger.Container {
+	return dag.Container().
+		From("debian").
+		WithExec(sh(`apt-get update && apt-get install -y --no-install-recommends curl ca-certificates bzip2 libxcb1; rm -rf /var/{cache/apt,lib/apt/lists}/*`)).
+		WithExec(sh(`curl -fsSL "https://github.com/block/goose/releases/download/v1.0.20/download_cli.sh" | GOOSE_BIN_DIR=/usr/local/bin CONFIGURE=false bash`)).
+		WithNewFile("/root/.config/goose/config.yaml", gooseConfig).
+		WithNewFile("/tmp/mcp.sh", mcpSh, dagger.ContainerWithNewFileOpts{Permissions: 755}).
+		WithMountedDirectory("/target", target).
+		WithMountedFile("/bin/dagger", e.DaggerCli).
+		WithSecretVariable("OPENAI_API_KEY", e.LLMKey)
+}
+
+func (e *EvalRunner) GooseTrivyScan(
+	ctx context.Context,
+	target *dagger.Directory,
+) (*EvalReport, error) {
+	ctr := e.gooseCtr(ctx, target)
+	ctr = ctr.WithWorkdir("/root").
+		WithNewFile("llm-history", "").
+		WithExec(sh("goose run -p llm-history -r -t hi"), dagger.ContainerWithExecOpts{ExperimentalPrivilegedNesting: true})
+	out, err := ctr.Stdout(ctx)
+	return nil, fmt.Errorf("debugging: %w\nout: %s\n", err, out)
 }
 
 func (e *EvalRunner) TrivyScan(

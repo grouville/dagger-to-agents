@@ -1,6 +1,6 @@
 {
   "name": "hello-dagger",
-  "engineVersion": "v0.18.4-250422121411-f6ed72e413cd",
+  "engineVersion": "v0.18.4",
   "sdk": {
     "source": "go"
   },

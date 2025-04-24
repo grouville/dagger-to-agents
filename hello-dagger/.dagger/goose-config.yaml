@@ -1,0 +1,15 @@
+GOOSE_PROVIDER: openai
+OPENAI_BASE_PATH: v1/chat/completions
+OPENAI_HOST: https://api.openai.com
+extensions:
+  dagger:
+    args: []
+    bundled: null
+    cmd: /tmp/mcp.sh
+    description: null
+    enabled: true
+    envs: {}
+    name: dagger
+    timeout: 300
+    type: stdio
+GOOSE_MODEL: gpt-4o

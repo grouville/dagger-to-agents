@@ -11,3 +11,11 @@ $ cd hello-dagger
 $ export OPENAI_API_KEY=***
 $ dagger_dev call --progress plain run-evals report
 ```
+
+## Running the evals with Goose (NOT WORKING, WIP)
+
+```shell
+$ cd hello-dagger
+$ export OPENAI_API_KEY=***
+$ dagger call --progress plain run-evals --project . --llm-key env://OPENAI_API_KEY --dagger-cli $(which dagger)
+```

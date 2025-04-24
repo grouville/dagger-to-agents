@@ -68,6 +68,9 @@ func (m *HelloDagger) RunEvals(
 	// +defaultPath="/hello-dagger"
 	project *dagger.Directory,
 	// +optional
+	llmKey *dagger.Secret,
+	daggerCli *dagger.File,
+	// +optional
 	models []string,
 ) ([]*EvalReport, error) {
 	var reports []*EvalReport
@@ -83,7 +86,9 @@ func (m *HelloDagger) RunEvals(
 
 	for _, model := range models {
 		// one evaluator struct per model
-		ev := NewEvalRunner().WithModel(model)
+		ev := NewEvalRunner().WithModel(model).WithGoose()
+		ev.LLMKey = llmKey
+		ev.DaggerCli = daggerCli
 
 		// // Eval #1
 		// r1, err := ev.NPMAudit(ctx, project)
@@ -93,7 +98,7 @@ func (m *HelloDagger) RunEvals(
 		// reports = append(reports, r1)
 
 		// Eval #2
-		r2, err := ev.TrivyScan(ctx, project)
+		r2, err := ev.GooseTrivyScan(ctx, project)
 		if err != nil {
 			return nil, fmt.Errorf("model %s TrivyScan: %w", model, err)
 		}
