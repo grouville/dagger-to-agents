@@ -62,3 +62,43 @@ func (m *HelloDagger) BuildEnv(
 		WithWorkdir("/src").
 		WithExec([]string{"npm", "install"})
 }
+
+func (m *HelloDagger) RunEvals(
+	ctx context.Context,
+	// +defaultPath="/hello-dagger"
+	project *dagger.Directory,
+	// +optional
+	models []string,
+) ([]*EvalReport, error) {
+	var reports []*EvalReport
+
+	// default to all available models
+	// workaround as //+ default does not work with slices
+	if models == nil {
+		models = []string{
+			"gpt-4o",
+			// "gpt-4.1",
+		}
+	}
+
+	for _, model := range models {
+		// one evaluator struct per model
+		ev := NewEvalRunner().WithModel(model)
+
+		// // Eval #1
+		// r1, err := ev.NPMAudit(ctx, project)
+		// if err != nil {
+		// 	return nil, fmt.Errorf("model %s NPMAudit: %w", model, err)
+		// }
+		// reports = append(reports, r1)
+
+		// Eval #2
+		r2, err := ev.TrivyScan(ctx, project)
+		if err != nil {
+			return nil, fmt.Errorf("model %s TrivyScan: %w", model, err)
+		}
+		reports = append(reports, r2)
+	}
+
+	return reports, nil
+}

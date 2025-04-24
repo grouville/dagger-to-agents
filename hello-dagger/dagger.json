@@ -7,11 +7,13 @@
   "dependencies": [
     {
       "name": "npm",
-      "source": "../toolkit/npm"
+      "source": "github.com/grouville/dagger-to-agents/toolkit/npm@main",
+      "pin": "b0e9fca74c9b80d0770a8eb8708c498f36dc66e3"
     },
     {
       "name": "trivy",
-      "source": "../toolkit/trivy"
+      "source": "github.com/grouville/dagger-to-agents/toolkit/trivy@main",
+      "pin": "b0e9fca74c9b80d0770a8eb8708c498f36dc66e3"
     }
   ],
   "source": ".dagger"
