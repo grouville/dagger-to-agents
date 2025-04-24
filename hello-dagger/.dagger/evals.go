@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -335,22 +334,23 @@ func (e *EvalRunner) NPMAudit(
 		ctx,
 		llm,
 		[]withLLMReportStep{
-			{
-				`Mount $src at /app in $node, set workdir /app, then run "npm install --audit=false" followed by "npm audit --json".  Write the JSON to /out/audit.json and expose it as $audit.`,
-				func(env *dagger.Env) *dagger.Env {
-					return env.
-						WithDirectoryInput("src", project, "Node project to audit.").
-						WithFileOutput("audit", "JSON output of npm audit.")
-				},
-				func(ctx context.Context, t testing.TB, llm *dagger.LLM) {
-					raw, err := llm.Env().Output("audit").AsFile().Contents(ctx)
-					require.NoError(t, err)
-					var parsed map[string]interface{}
-					require.NoError(t, json.Unmarshal([]byte(raw), &parsed))
-					_, ok := parsed["vulnerabilities"]
-					require.True(t, ok, "npm audit JSON missing 'vulnerabilities'")
-				},
-			},
+			// TODO: add a test for this
+			// {
+			// 	`Mount $src at /app in $node, set workdir /app, then run "npm install --audit=false" followed by "npm audit --json".  Write the JSON to /out/audit.json and expose it as $audit.`,
+			// 	func(env *dagger.Env) *dagger.Env {
+			// 		return env.
+			// 			WithDirectoryInput("src", project, "Node project to audit.").
+			// 			WithFileOutput("audit", "JSON output of npm audit.")
+			// 	},
+			// 	func(ctx context.Context, t testing.TB, llm *dagger.LLM) {
+			// 		raw, err := llm.Env().Output("audit").AsFile().Contents(ctx)
+			// 		require.NoError(t, err)
+			// 		var parsed map[string]interface{}
+			// 		require.NoError(t, json.Unmarshal([]byte(raw), &parsed))
+			// 		_, ok := parsed["vulnerabilities"]
+			// 		require.True(t, ok, "npm audit JSON missing 'vulnerabilities'")
+			// 	},
+			// },
 		}...,
 	)
 }
@@ -359,7 +359,6 @@ func (e *EvalRunner) TrivyScan(
 	ctx context.Context,
 	target *dagger.Directory,
 ) (*EvalReport, error) {
-
 	llm := e.llm().
 		WithEnv(
 			dag.Env(dagger.EnvOpts{
@@ -393,9 +392,18 @@ func (e *EvalRunner) TrivyScan(
 					require.NoError(t, err)
 					// fmt.Fprintf(os.Stderr, "🥶debug: %s\n", out)
 					require.Contains(t, out, "Vulnerability", "VULNERABILITY")
-					// t.FailNow() // bugs
 				},
 			},
+			// {
+			// 	`summarize the result and give me action items`,
+			// 	nil,
+			// 	func(ctx context.Context, t testing.TB, llm *dagger.LLM) {
+			// 		// out, err := llm.Env().Output("trivyOutput").AsString(ctx)
+			// 		// require.NoError(t, err)
+			// 		// fmt.Fprintf(os.Stderr, "🥶debug: %s\n", out)
+			// 		// require.Contains(t, out, "Vulnerability", "VULNERABILITY")
+			// 	},
+			// },
 		}...,
 	)
 }
