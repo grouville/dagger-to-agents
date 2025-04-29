@@ -27,6 +27,7 @@ type EvalRunner struct {
 	Goose        bool
 	DaggerCli    *dagger.File
 	LLMKey       *dagger.Secret
+	DockerSocket *dagger.Socket
 }
 
 func NewEvalRunner() *EvalRunner {
@@ -375,27 +376,34 @@ func sh(s string) []string {
 }
 
 func (e *EvalRunner) gooseCtr(ctx context.Context, target *dagger.Directory) *dagger.Container {
+	// utiliser ça pour faire un docker-in-docker
+	// dagger -c 'container | from debian | with-exec sh,-c,"apt update && apt-get install -y --no-install-recommends curl ca-certificates && curl -fsSL https://get.docker.io/ | sh" | with-mounted-file /bin/dagger $(host | file /home/guillaume/dagger/bin/dagger) | with-unix-socket /var/run/docker.sock $(host | unix-socket /var/run/docker.sock)  | terminal'
 	return dag.Container().
 		From("debian").
 		WithExec(sh(`apt-get update && apt-get install -y --no-install-recommends curl ca-certificates bzip2 libxcb1; rm -rf /var/{cache/apt,lib/apt/lists}/*`)).
+		// From("docker:cli"). // with a base image
+		// WithExec(sh(`apk add -U bash curl ca-certificates`)).
+		WithExec(sh(`curl -fsSL "https://get.docker.io/" | sh`)).
 		WithExec(sh(`curl -fsSL "https://github.com/block/goose/releases/download/v1.0.20/download_cli.sh" | GOOSE_BIN_DIR=/usr/local/bin CONFIGURE=false bash`)).
 		WithNewFile("/root/.config/goose/config.yaml", gooseConfig).
 		WithNewFile("/tmp/mcp.sh", mcpSh, dagger.ContainerWithNewFileOpts{Permissions: 755}).
 		WithMountedDirectory("/target", target).
 		WithMountedFile("/bin/dagger", e.DaggerCli).
+		WithUnixSocket("/var/run/docker.sock", e.DockerSocket).
 		WithSecretVariable("OPENAI_API_KEY", e.LLMKey)
 }
 
 func (e *EvalRunner) GooseTrivyScan(
 	ctx context.Context,
 	target *dagger.Directory,
-) (*EvalReport, error) {
+) (*dagger.Container, error) {
 	ctr := e.gooseCtr(ctx, target)
 	ctr = ctr.WithWorkdir("/root").
 		WithNewFile("llm-history", `{"working_dir":"/root","description":"Initial greeting exchange","message_count":2,"total_tokens":687,"input_tokens":673,"output_tokens":14,"accumulated_total_tokens":1373,"accumulated_input_tokens":1346,"accumulated_output_tokens":27}`).
-		WithExec(sh("goose run -p llm-history -r -t hi"), dagger.ContainerWithExecOpts{ExperimentalPrivilegedNesting: true})
-	out, err := ctr.Stdout(ctx)
-	return nil, fmt.Errorf("debugging: %w\nout: %s\n", err, out)
+		// WithExec([]string{"bash"})
+		WithExec(sh("goose run -p llm-history -r -t hi"))
+	// out, err := ctr.Stdout(ctx)
+	return ctr, nil
 }
 
 func (e *EvalRunner) TrivyScan(
