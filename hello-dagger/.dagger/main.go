@@ -67,13 +67,15 @@ func (m *HelloDagger) RunEvals(
 	ctx context.Context,
 	// +defaultPath="/hello-dagger"
 	project *dagger.Directory,
+
 	// +optional
 	llmKey *dagger.Secret,
 	daggerCli *dagger.File,
 	dockerSocket *dagger.Socket,
+
 	// +optional
 	models []string,
-) (*dagger.Container, error) {
+) (*EvalReport, error) {
 	// var reports []*EvalReport
 
 	// default to all available models
@@ -87,10 +89,6 @@ func (m *HelloDagger) RunEvals(
 
 	// for _, model := range models {
 	// 	// one evaluator struct per model
-	ev := NewEvalRunner().WithModel("gpt-4o").WithGoose()
-	ev.LLMKey = llmKey
-	ev.DaggerCli = daggerCli
-	ev.DockerSocket = dockerSocket
 
 	// // Eval #1
 	// r1, err := ev.NPMAudit(ctx, project)
@@ -100,7 +98,12 @@ func (m *HelloDagger) RunEvals(
 	// reports = append(reports, r1)
 
 	// Eval #2
-	r2, err := ev.GooseTrivyScan(ctx, project)
+	// r2, err := GooseTrivyScan(ctx, project, driver)
+	ev := NewEvalRunner("gpt-4o", "", daggerCli, project)
+	r2, err := TrivyScan(ctx, EvalContext{
+		runner: ev,
+		driver: DaggerShellDriver{},
+	})
 	if err != nil {
 		return nil, fmt.Errorf("model %s TrivyScan: %w", "gpt-4o", err)
 	}
