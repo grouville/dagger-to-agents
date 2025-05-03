@@ -79,3 +79,54 @@ func TrivyScan(
 
 // NPMAudit function removed as part of refactoring.
 // It can be reimplemented using the new driver pattern if needed.
+func NpmAudit(
+	ctx context.Context,
+	ec EvalContext,
+) (*EvalReport, error) {
+	return withLLMReport(
+		ctx,
+		ec,
+		[]withLLMReportStep{
+			{
+				`run the test coverage and save the output`,
+				func(env *dagger.Env) *dagger.Env {
+					return env.
+						WithStringOutput("npmAuditOutput", "The final result to store the NPM audit output").
+						WithDirectoryInput("workdir", ec.runner.Target, "the current project's directory")
+
+				},
+				func(ctx context.Context, t testing.TB, env *dagger.Env) {
+					out, err := env.Output("npmAuditOutput").AsString(ctx)
+					require.NoError(t, err)
+
+					// fmt.Fprintf(os.Stderr, "🔥NPM Audit: |%s|\n", out)
+					require.Contains(t, out, "HelloWorld.vue")
+				},
+			},
+			// {
+			// 	`check for its vulnerabilities`,
+			// 	func(env *dagger.Env) *dagger.Env {
+			// 		return env.WithStringOutput("trivyOutput", "Trivy scan output")
+			// 	},
+			// 	func(ctx context.Context, t testing.TB, env *dagger.Env) {
+			// 		out, err := env.Output("trivyOutput").AsString(ctx)
+			// 		require.NoError(t, err)
+
+			// 		require.Contains(t, out, "Report")
+			// 	},
+			// },
+			// {
+			// 	`summarize the result and give me action items`,
+			// 	func(env *dagger.Env) *dagger.Env {
+			// 		return env.WithStringOutput("actionItems", "Action items list")
+			// 	},
+			// 	func(ctx context.Context, t testing.TB, env *dagger.Env) {
+			// 		out, err := env.Output("trivyOutput").AsString(ctx)
+			// 		require.NoError(t, err)
+			// 		// fmt.Fprintf(os.Stderr, "🥶debug: %s\n", out)
+			// 		require.Contains(t, out, "Vulnerability", "VULNERABILITY")
+			// 	},
+			// },
+		}...,
+	)
+}

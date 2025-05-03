@@ -100,7 +100,8 @@ func (m *HelloDagger) RunEvals(
 	// Eval #2
 	// r2, err := GooseTrivyScan(ctx, project, driver)
 	ev := NewEvalRunner("gpt-4o", "", daggerCli, project)
-	r2, err := TrivyScan(ctx, EvalContext{
+	r2, err := NpmAudit(ctx, EvalContext{
+		// r2, err := TrivyScan(ctx, EvalContext{
 		runner: ev,
 		driver: DaggerShellDriver{},
 	})
