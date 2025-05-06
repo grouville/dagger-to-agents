@@ -6,6 +6,8 @@ import (
 	"context"
 
 	"npm/internal/dagger"
+
+	"dagger.io/dagger/dag"
 )
 
 type Npm struct {
@@ -17,7 +19,6 @@ type Npm struct {
 func New(
 	// +optional
 	ctr *dagger.Container,
-	// +defaultPath="/hello-dagger"
 	source *dagger.Directory,
 ) *Npm {
 	if ctr == nil {
