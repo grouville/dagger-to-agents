@@ -1,5 +1,3 @@
-// NPM related tools that works with any given source directory
-
 package main
 
 import (
@@ -13,11 +11,12 @@ type Npm struct {
 	Source *dagger.Directory
 }
 
-// NPM related tools that works with any given source directory
+// NPM related tools that work with any given source directory. Tools include:
+// - InstallDependencies
+// - Coverage
 func New(
 	// +optional
 	ctr *dagger.Container,
-	// +defaultPath="/hello-dagger"
 	source *dagger.Directory,
 ) *Npm {
 	if ctr == nil {
