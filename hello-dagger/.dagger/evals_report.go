@@ -167,16 +167,16 @@ func withLLMReport(
 
 	// fmt.Fprintln(reportMD, "### Evaluation Result")
 	// fmt.Fprintln(reportMD)
-	// if t.Failed() {
-	// 	fmt.Fprintln(reportMD, t.Logs())
-	// 	fmt.Fprintln(reportMD, "FAILED")
-	// } else if t.Skipped() {
-	// 	fmt.Fprintln(reportMD, t.Logs())
-	// 	fmt.Fprintln(reportMD, "SKIPPED")
-	// } else {
-	// 	fmt.Fprintln(reportMD, "SUCCESS")
-	// 	report.Succeeded = true
-	// }
+	if t.Failed() {
+		fmt.Fprintln(reportMD, t.Logs())
+		fmt.Fprintln(reportMD, "FAILED")
+	} else if t.Skipped() {
+		fmt.Fprintln(reportMD, t.Logs())
+		fmt.Fprintln(reportMD, "SKIPPED")
+	} else {
+		fmt.Fprintln(reportMD, "SUCCESS")
+		report.Succeeded = true
+	}
 
 	// report.Report = reportMD.String()
 
