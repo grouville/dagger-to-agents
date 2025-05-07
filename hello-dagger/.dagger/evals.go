@@ -93,7 +93,6 @@ func NpmAudit(
 					return env.
 						WithStringOutput("npmAuditOutput", "The final result to store the NPM audit output").
 						WithDirectoryInput("workdir", ec.runner.Target, "the current project's directory")
-
 				},
 				func(ctx context.Context, t testing.TB, env *dagger.Env) {
 					out, err := env.Output("npmAuditOutput").AsString(ctx)

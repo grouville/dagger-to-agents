@@ -8,7 +8,11 @@ extensions:
     cmd: /tmp/mcp.sh
     description: null
     enabled: true
-    envs: {}
+    envs:
+      OPENAI_API_KEY: foo
+      DAGGER_LOG_STDIN: /tmp/debug.stdin.log
+      DAGGER_LOG_STDOUT: /tmp/debug.stdout.log
+      DAGGER_LOG_STDERR: /tmp/debug.stderr.log
     name: dagger
     timeout: 300
     type: stdio

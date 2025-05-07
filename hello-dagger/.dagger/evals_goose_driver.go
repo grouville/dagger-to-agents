@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"dagger.io/dagger"
+	"github.com/dagger/dagger/dagql"
 )
 
 // satisfy the LLMTestClientDriver interface
@@ -57,7 +58,8 @@ func (e *EvalRunner) gooseCtr(ctx context.Context, target *dagger.Directory) *da
 		WithMountedDirectory("/target", target).
 		WithMountedFile("/bin/dagger", e.DaggerCli).
 		WithUnixSocket("/var/run/docker.sock", e.DockerSocket).
-		WithSecretVariable("OPENAI_API_KEY", e.LLMKey)
+		WithSecretVariable("OPENAI_API_KEY", e.LLMKey).
+		WithWorkdir("/target")
 }
 
 type GooseClient struct {
@@ -86,6 +88,7 @@ func NewGoose(ev *EvalRunner) LLMTestClient {
 }
 
 func (d *GooseClient) SetPrompt(ctx context.Context, prompt string) {
+	// append only prompt -- as the shell driver's behavior
 	d.prompt = d.prompt + " " + prompt
 }
 
@@ -95,11 +98,32 @@ func (d *GooseClient) SetEnv(ctx context.Context, fn EnvModifierFunc) {
 }
 
 // Retrieves the current environment following a test run.
-// func (d *GooseClient) GetEnv(ctx context.Context) *dagger.Env {
-// 	// HOW??
+func (d *GooseClient) GetEnv(ctx context.Context) *dagger.Env {
+	// genMcpToolHandler
+	content, err := d.goose.File("/tmp/declare/output").Contents(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to retrieve the output from (%w)", err)
+	}
 
-// 	// genMcpToolHandler
-// }
+	var outputs []Binding
+	err = json.Unmarshal(content, &outputs)
+	if err != nil {
+		panic(fmt.Errorf("failed to unserialize the output env from the `/tmp/declare/output` file: %w", err))
+		// return fmt.Errorf("failed to unmarshal env: %w", err)
+		// TODO: we don't really care after -- or we need to change the proto on the interface
+	}
+
+	env := dagger.Env()
+	for _, o := range outputs {
+		// We know, for sure, that it only has String outputs
+		// So we construct the env with this string output
+		// And we set the value to the output value
+		env = env.WithStringOutput(o.Key, o.Description)
+		env.Output(o.Key).Value = dagql.NewString(o.Value)
+	}
+
+	return env
+}
 
 // Retrieves the current environment following a test run.
 func (d *GooseClient) Run(ctx context.Context) (err error) {
@@ -122,7 +146,7 @@ func (d *GooseClient) Run(ctx context.Context) (err error) {
 	// per attempt later
 	ctr = ctr.WithExec(sh(fmt.Sprintf("goose run -p llm-history -r -t %q", d.prompt)))
 
-	_, err = ctr.Sync(ctx)
+	d.goose, err = ctr.Sync(ctx) // update the state of the container
 	return err
 }
 
@@ -134,15 +158,10 @@ func convertEnv(ctx context.Context, env *dagger.Env) (*Env, error) {
 	// convert the inputs and outputs to our own Env type that the `dagger mcp --with-env` command will catch
 	var myEnv Env
 	for _, input := range inputs {
-		// TODO(BUG?): assert that only scalars are handled. Currently Typename is always empty (????)
-		// typeDef, err := input.TypeName(ctx)
-		// if err != nil {
-		// 	log.Fatalf("failed to get input type: %v", err)
-		// }
-
-		// if typeDef != "string" {
-		// 	log.Fatalf("expected input type to only have scalars, got |%s|\n", typeDef)
-		// }
+		// skip non String inputs // scalars
+		if input.Value.Type().NamedType != "String" {
+			continue
+		}
 
 		name, err := input.Name(ctx)
 		if err != nil {

@@ -103,7 +103,8 @@ func (m *HelloDagger) RunEvals(
 	r2, err := NpmAudit(ctx, EvalContext{
 		// r2, err := TrivyScan(ctx, EvalContext{
 		runner: ev,
-		driver: DaggerShellDriver{},
+		// driver: DaggerShellDriver{},
+		driver: GooseDriver{},
 	})
 	if err != nil {
 		return nil, fmt.Errorf("model %s TrivyScan: %w", "gpt-4o", err)
