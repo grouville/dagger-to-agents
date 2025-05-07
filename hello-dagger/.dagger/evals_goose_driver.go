@@ -6,8 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"dagger.io/dagger"
-	"github.com/dagger/dagger/dagql"
+	"dagger/hello-dagger/internal/dagger"
 )
 
 // satisfy the LLMTestClientDriver interface
@@ -22,7 +21,7 @@ func (GooseDriver) NewTestClient(ev *EvalRunner) LLMTestClient {
 // The current communication is via a file and executed at the start -- end of the run
 type Binding struct {
 	Key   string
-	Value string // will be any
+	Value any // will be any
 
 	Description string
 	// The expected type
@@ -30,7 +29,7 @@ type Binding struct {
 	// ExpectedType string
 }
 
-type Env struct {
+type TestEnv struct {
 	Inputs  []Binding
 	Outputs []Binding
 }
@@ -102,24 +101,26 @@ func (d *GooseClient) GetEnv(ctx context.Context) *dagger.Env {
 	// genMcpToolHandler
 	content, err := d.goose.File("/tmp/declare/output").Contents(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to retrieve the output from (%w)", err)
+		panic(fmt.Errorf("failed to retrieve the output from (%w)", err))
+		// return fmt.Errorf("failed to retrieve the output from (%w)", err)
 	}
 
 	var outputs []Binding
-	err = json.Unmarshal(content, &outputs)
+	err = json.Unmarshal([]byte(content), &outputs)
 	if err != nil {
 		panic(fmt.Errorf("failed to unserialize the output env from the `/tmp/declare/output` file: %w", err))
 		// return fmt.Errorf("failed to unmarshal env: %w", err)
 		// TODO: we don't really care after -- or we need to change the proto on the interface
 	}
 
-	env := dagger.Env()
+	env := dag.Env()
 	for _, o := range outputs {
 		// We know, for sure, that it only has String outputs
 		// So we construct the env with this string output
 		// And we set the value to the output value
 		env = env.WithStringOutput(o.Key, o.Description)
-		env.Output(o.Key).Value = dagql.NewString(o.Value)
+		// bind := env.Output(o.Key)
+		// bind.Value = dagql.NewString(o.Value)
 	}
 
 	return env
@@ -150,22 +151,26 @@ func (d *GooseClient) Run(ctx context.Context) (err error) {
 	return err
 }
 
-func convertEnv(ctx context.Context, env *dagger.Env) (*Env, error) {
+func convertEnv(ctx context.Context, env *dagger.Env) (*TestEnv, error) {
 	// extract the inputs and outputs from its new state
 	inputs, _ := env.Inputs(ctx)
 	outputs, _ := env.Outputs(ctx)
 
 	// convert the inputs and outputs to our own Env type that the `dagger mcp --with-env` command will catch
-	var myEnv Env
+	var myEnv TestEnv
 	for _, input := range inputs {
-		// skip non String inputs // scalars
-		if input.Value.Type().NamedType != "String" {
-			continue
-		}
+		// // skip non String inputs // scalars
+		// if input.Value.Type().NamedType != "String" {
+		// 	continue
+		// }
 
 		name, err := input.Name(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get input name: %w", err)
+		}
+
+		if name == "workdir" {
+			continue
 		}
 
 		val, err := input.AsString(ctx)
