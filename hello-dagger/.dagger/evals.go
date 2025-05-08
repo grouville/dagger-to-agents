@@ -3,8 +3,6 @@ package main
 import (
 	"context"
 	_ "embed"
-	"fmt"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -35,30 +33,45 @@ func TrivyScan(
 		ec,
 		[]withLLMReportStep{
 			{
-				`publish the hello dagger app`,
+				`Show the description of select_tools`,
 				func(env *TestEnv) *TestEnv {
-					return env.WithStringOutput("imageRef", "Published docker image")
+					// return env.WithStringOutput("imageRef", "Published docker image")
+					return env
 				},
 				func(ctx context.Context, t testing.TB, env *TestEnv) {
-					out, err := env.Output("imageRef").AsString(ctx)
-					require.NoError(t, err)
+					// out, err := env.Output("imageRef").AsString(ctx)
+					// require.NoError(t, err)
 
-					fmt.Fprintf(os.Stderr, "ImageRef: %s\n", out)
-					require.Contains(t, out, "ttl.sh/hello-dagger-")
+					// fmt.Fprintf(os.Stderr, "ImageRef: %s\n", out)
+					// require.Contains(t, out, "ttl.sh/hello-dagger-")
+					t.Fatal("toto")
 				},
 			},
-			{
-				`check for its vulnerabilities`,
-				func(env *TestEnv) *TestEnv {
-					return env.WithStringOutput("trivyOutput", "Trivy scan output")
-				},
-				func(ctx context.Context, t testing.TB, env *TestEnv) {
-					out, err := env.Output("trivyOutput").AsString(ctx)
-					require.NoError(t, err)
+			// {
+			// 	`publish the hello dagger app`,
+			// 	func(env *TestEnv) *TestEnv {
+			// 		return env.WithStringOutput("imageRef", "Published docker image")
+			// 	},
+			// 	func(ctx context.Context, t testing.TB, env *TestEnv) {
+			// 		out, err := env.Output("imageRef").AsString(ctx)
+			// 		require.NoError(t, err)
 
-					require.Contains(t, out, "Report")
-				},
-			},
+			// 		fmt.Fprintf(os.Stderr, "ImageRef: %s\n", out)
+			// 		require.Contains(t, out, "ttl.sh/hello-dagger-")
+			// 	},
+			// },
+			// {
+			// 	`check for its vulnerabilities`,
+			// 	func(env *TestEnv) *TestEnv {
+			// 		return env.WithStringOutput("trivyOutput", "Trivy scan output")
+			// 	},
+			// 	func(ctx context.Context, t testing.TB, env *TestEnv) {
+			// 		out, err := env.Output("trivyOutput").AsString(ctx)
+			// 		require.NoError(t, err)
+
+			// 		require.Contains(t, out, "Report")
+			// 	},
+			// },
 			// {
 			// 	`summarize the result and give me action items`,
 			// 	func(env *dagger.Env) *dagger.Env {

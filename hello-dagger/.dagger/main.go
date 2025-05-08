@@ -114,3 +114,15 @@ func (m *HelloDagger) RunEvals(
 
 	return r2, nil
 }
+
+func (m *HelloDagger) Toto(
+	ctx context.Context,
+) (string, error) {
+
+	return daggerLLM.WithEnv(
+		dag.Env(dagger.EnvOpts{
+			Privileged: true,
+		}),
+	)
+	dag.LLM().WithPrompt(`Show me all the tools in a table format, with their name and description`).LastReply(ctx)
+}
