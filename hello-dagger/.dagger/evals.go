@@ -7,8 +7,6 @@ import (
 	"os"
 	"testing"
 
-	"dagger/hello-dagger/internal/dagger"
-
 	"github.com/stretchr/testify/require"
 )
 
@@ -38,10 +36,10 @@ func TrivyScan(
 		[]withLLMReportStep{
 			{
 				`publish the hello dagger app`,
-				func(env *dagger.Env) *dagger.Env {
+				func(env *TestEnv) *TestEnv {
 					return env.WithStringOutput("imageRef", "Published docker image")
 				},
-				func(ctx context.Context, t testing.TB, env *dagger.Env) {
+				func(ctx context.Context, t testing.TB, env *TestEnv) {
 					out, err := env.Output("imageRef").AsString(ctx)
 					require.NoError(t, err)
 
@@ -51,10 +49,10 @@ func TrivyScan(
 			},
 			{
 				`check for its vulnerabilities`,
-				func(env *dagger.Env) *dagger.Env {
+				func(env *TestEnv) *TestEnv {
 					return env.WithStringOutput("trivyOutput", "Trivy scan output")
 				},
-				func(ctx context.Context, t testing.TB, env *dagger.Env) {
+				func(ctx context.Context, t testing.TB, env *TestEnv) {
 					out, err := env.Output("trivyOutput").AsString(ctx)
 					require.NoError(t, err)
 
@@ -89,12 +87,12 @@ func NpmAudit(
 		[]withLLMReportStep{
 			{
 				`run the test coverage and save the output`,
-				func(env *dagger.Env) *dagger.Env {
+				func(env *TestEnv) *TestEnv {
 					return env.
 						WithStringOutput("npmAuditOutput", "The final result to store the NPM audit output").
 						WithDirectoryInput("workdir", ec.runner.Target, "the current project's directory")
 				},
-				func(ctx context.Context, t testing.TB, env TestEnv) {
+				func(ctx context.Context, t testing.TB, env *TestEnv) {
 					out, err := env.Output("npmAuditOutput").AsString(ctx)
 					require.NoError(t, err)
 

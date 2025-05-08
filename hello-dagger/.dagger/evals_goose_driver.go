@@ -16,24 +16,6 @@ func (GooseDriver) NewTestClient(ev *EvalRunner) LLMTestClient {
 	return NewGoose(ev)
 }
 
-// Env and Binding are extracted partially from core/env.go/Binding type
-// We need it to pass the env inputs and outputs in and out via the dagger mcp command
-// The current communication is via a file and executed at the start -- end of the run
-type Binding struct {
-	Key   string
-	Value any // will be any
-
-	Description string
-	// The expected type
-	// Used when defining an output
-	// ExpectedType string
-}
-
-type TestEnv struct {
-	Inputs  []Binding
-	Outputs []Binding
-}
-
 //go:embed goose-config.yaml
 var gooseConfig string
 
@@ -65,8 +47,8 @@ type GooseClient struct {
 	// llm *dagger.LLM
 	goose *dagger.Container // state of the goose container with DaggeriDagger
 
-	env    *dagger.Env // keep track of the current environment + all the applied bindings
-	prompt string      // the prompt to be used for the goose container
+	env    *TestEnv // keep track of the current environment + all the applied bindings
+	prompt string   // the prompt to be used for the goose container
 }
 
 func NewGoose(ev *EvalRunner) LLMTestClient {
@@ -82,7 +64,7 @@ func NewGoose(ev *EvalRunner) LLMTestClient {
 
 	return &GooseClient{
 		goose: baseCtr,
-		env:   dag.Env(),
+		env:   NewTestEnv(),
 	}
 }
 
@@ -97,44 +79,35 @@ func (d *GooseClient) SetEnv(ctx context.Context, fn EnvModifierFunc) {
 }
 
 // Retrieves the current environment following a test run.
-func (d *GooseClient) GetEnv(ctx context.Context) *dagger.Env {
-	// genMcpToolHandler
+func (d *GooseClient) GetEnv(ctx context.Context) *TestEnv {
+	// 1. Read the JSON file generated inside the container.
 	content, err := d.goose.File("/tmp/declare/output").Contents(ctx)
 	if err != nil {
-		panic(fmt.Errorf("failed to retrieve the output from (%w)", err))
-		// return fmt.Errorf("failed to retrieve the output from (%w)", err)
+		panic(fmt.Errorf("failed to read goose outputs: %w", err))
 	}
 
-	var outputs []Binding
-	err = json.Unmarshal([]byte(content), &outputs)
-	if err != nil {
-		panic(fmt.Errorf("failed to unserialize the output env from the `/tmp/declare/output` file: %w", err))
-		// return fmt.Errorf("failed to unmarshal env: %w", err)
-		// TODO: we don't really care after -- or we need to change the proto on the interface
+	// 2. Unmarshal into a slice of TestBinding (same shape as we exported).
+	var outs []TestBinding
+	if err := json.Unmarshal([]byte(content), &outs); err != nil {
+		panic(fmt.Errorf("failed to unmarshal goose outputs: %w", err))
 	}
 
-	env := dag.Env()
-	for _, o := range outputs {
-		// We know, for sure, that it only has String outputs
-		// So we construct the env with this string output
-		// And we set the value to the output value
-		env = env.WithStringOutput(o.Key, o.Description)
-		// bind := env.Output(o.Key)
-		// bind.Value = dagql.NewString(o.Value)
+	// 3. Merge results into the client’s current environment.
+	if d.env == nil {
+		d.env = NewTestEnv()
+	}
+	for _, b := range outs {
+		// Note: this export method from the engine only works with string values.
+		d.env.Outputs[b.Key] = b
 	}
 
-	return env
+	return d.env
 }
 
 // Retrieves the current environment following a test run.
 func (d *GooseClient) Run(ctx context.Context) (err error) {
-	myEnv, err := convertEnv(ctx, d.env)
-	if err != nil {
-		return fmt.Errorf("failed to convert env to JSON: %w", err)
-	}
-
 	// marshall it and write it to the file at a fixed location
-	data, err := json.Marshal(myEnv)
+	data, err := json.Marshal(d.env)
 	if err != nil {
 		return fmt.Errorf("failed to marshal env: %w", err)
 	}
@@ -149,69 +122,4 @@ func (d *GooseClient) Run(ctx context.Context) (err error) {
 
 	d.goose, err = ctr.Sync(ctx) // update the state of the container
 	return err
-}
-
-func convertEnv(ctx context.Context, env *dagger.Env) (*TestEnv, error) {
-	// extract the inputs and outputs from its new state
-	inputs, _ := env.Inputs(ctx)
-	outputs, _ := env.Outputs(ctx)
-
-	// convert the inputs and outputs to our own Env type that the `dagger mcp --with-env` command will catch
-	var myEnv TestEnv
-	for _, input := range inputs {
-		// // skip non String inputs // scalars
-		// if input.Value.Type().NamedType != "String" {
-		// 	continue
-		// }
-
-		name, err := input.Name(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get input name: %w", err)
-		}
-
-		if name == "workdir" {
-			continue
-		}
-
-		val, err := input.AsString(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get input value: %w", err)
-		}
-
-		desc, err := input.Description(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get input description: %w", err)
-		}
-
-		myEnv.Inputs = append(myEnv.Inputs, Binding{
-			Key:         name,
-			Value:       val,
-			Description: desc,
-		})
-	}
-
-	for _, output := range outputs {
-		name, err := output.Name(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get output name: %w", err)
-		}
-
-		val, err := output.AsString(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get output value: %w", err)
-		}
-
-		desc, err := output.Description(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get output description: %w", err)
-		}
-
-		myEnv.Outputs = append(myEnv.Outputs, Binding{
-			Key:         name,
-			Value:       val,
-			Description: desc,
-		})
-	}
-
-	return &myEnv, nil
 }

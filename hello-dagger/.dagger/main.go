@@ -98,13 +98,13 @@ func (m *HelloDagger) RunEvals(
 	// reports = append(reports, r1)
 
 	// Eval #2
-	// r2, err := GooseTrivyScan(ctx, project, driver)
+
 	ev := NewEvalRunner("gpt-4o", "", daggerCli, project)
-	r2, err := NpmAudit(ctx, EvalContext{
-		// r2, err := TrivyScan(ctx, EvalContext{
+	// r2, err := NpmAudit(ctx, EvalContext{
+	r2, err := TrivyScan(ctx, EvalContext{
 		runner: ev,
-		// driver: DaggerShellDriver{},
-		driver: GooseDriver{},
+		driver: DaggerShellDriver{},
+		// driver: GooseDriver{},
 	})
 	if err != nil {
 		return nil, fmt.Errorf("model %s TrivyScan: %w", "gpt-4o", err)

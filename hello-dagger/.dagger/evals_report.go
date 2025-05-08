@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/otel/codes"
 )
 
-type EnvModifierFunc func(*dagger.Env) *dagger.Env
+type EnvModifierFunc func(*TestEnv) *TestEnv
 
 type LLMTestClient interface {
 	// SetPrompt applies the given prompt and returns an updated driver instance and any error.
@@ -32,7 +32,7 @@ type LLMTestClient interface {
 	// SetEnv applies environment modifications using the provided function.
 	SetEnv(ctx context.Context, fn EnvModifierFunc)
 	// Retrieves the current environment following a test run.
-	GetEnv(ctx context.Context) *dagger.Env
+	GetEnv(ctx context.Context) *TestEnv
 	// Run the LLM client driver with the given context.
 	Run(ctx context.Context) error
 }
@@ -64,8 +64,8 @@ type EvalReport struct {
 // withLLMReportStep defines a single step in an LLM evaluation.
 type withLLMReportStep struct {
 	prompt string
-	envOpt func(*dagger.Env) *dagger.Env
-	check  func(context.Context, testing.TB, *dagger.Env)
+	envOpt func(*TestEnv) *TestEnv
+	check  func(context.Context, testing.TB, *TestEnv)
 }
 
 // withLLMReport executes a series of steps using an LLMDriver and generates a report.
