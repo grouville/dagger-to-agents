@@ -8,7 +8,6 @@ import (
 
 type Npm struct {
 	Ctr    *dagger.Container
-	Source *dagger.Directory
 }
 
 // NPM related tools that work with any given source directory. Tools include:
@@ -17,36 +16,31 @@ type Npm struct {
 func New(
 	// +optional
 	ctr *dagger.Container,
-	source *dagger.Directory,
 ) *Npm {
 	if ctr == nil {
 		ctr = dag.Container().From("node")
 	}
-	return &Npm{ctr, source}
+	return &Npm{ctr}
 }
 
-// InstallDependencies installs the necessary dependencies for running tests and coverage
-func (m *Npm) InstallDependencies(ctx context.Context) error {
+func (m *Npm) installDependencies(ctx context.Context, source *dagger.Directory) (*dagger.Container, error) {
 	// Install vitest and coverage dependencies
-	_, err := m.Ctr.
-		WithMountedDirectory("/src", m.Source).
+	return m.Ctr.
+		WithMountedDirectory("/src", source).
 		WithWorkdir("/src").
-		WithExec([]string{"npm", "install", "--save-dev", "vitest", "@vitest/coverage-v8"}).
-		Stdout(ctx)
-	return err
+		WithExec([]string{"npm", "install", "--save-dev", "vitest", "@vitest/coverage-v8"})
 }
 
 // Coverage runs the Vitest coverage command and returns its stdout
-func (m *Npm) Coverage(ctx context.Context) (string, error) {
+func (m *Npm) Coverage(ctx context.Context, source *dagger.Directory) (string, error) {
 	// Ensure dependencies are installed
-	if err := m.InstallDependencies(ctx); err != nil {
+	ctr, err := m.installDependencies(ctx, source)
+	if err != nil {
 		return "", err
 	}
 
 	// Run the coverage command
-	return m.Ctr.
-		WithMountedDirectory("/src", m.Source).
-		WithWorkdir("/src").
+	return ctr.
 		WithExec([]string{"npx", "vitest", "run", "--coverage"}).
 		Stdout(ctx)
 }
