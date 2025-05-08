@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 
 	"dagger/hello-dagger/internal/dagger"
 )
@@ -60,14 +59,18 @@ func (d *DaggerShellClient) SetPrompt(ctx context.Context, prompt string) {
 	d.llm = d.llm.WithPrompt(prompt)
 }
 
+var MY_ENV *dagger.Env
+
 func (d *DaggerShellClient) GetEnv(ctx context.Context) *TestEnv {
 	return FromDagger(d.llm.Env())
 }
 
 func (d *DaggerShellClient) SetEnv(ctx context.Context, modFn EnvModifierFunc) {
-	fmt.Errorf("modFn: %v", modFn)
-	after := modFn(FromDagger(d.llm.Env()))
-	d.llm = d.llm.WithEnv(after.ToDagger())
+	MY_ENV = d.llm.Env()
+	_ = modFn
+	// fmt.Errorf("modFn: %v", modFn)
+	// after := modFn(FromDagger(d.llm.Env()))
+	// d.llm = d.llm.WithEnv(after.ToDagger())
 }
 
 func (d *DaggerShellClient) Run(ctx context.Context) (err error) {

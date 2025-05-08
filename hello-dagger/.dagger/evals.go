@@ -35,8 +35,8 @@ func TrivyScan(
 			{
 				`Show the description of select_tools`,
 				func(env *TestEnv) *TestEnv {
-					// return env.WithStringOutput("imageRef", "Published docker image")
-					return env
+					return env.WithStringOutput("imageRef", "Published docker image")
+					// return env
 				},
 				func(ctx context.Context, t testing.TB, env *TestEnv) {
 					// out, err := env.Output("imageRef").AsString(ctx)

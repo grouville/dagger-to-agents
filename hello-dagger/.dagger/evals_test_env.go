@@ -81,7 +81,9 @@ func FromDagger(de *dagger.Env) *TestEnv {
 }
 
 func (e *TestEnv) ToDagger() *dagger.Env {
-	d := dag.Env()
+	d := dag.Env(dagger.EnvOpts{
+		Privileged: true,
+	})
 	for _, b := range e.Inputs {
 		switch v := b.Value.(type) {
 		case string:
