@@ -10,9 +10,9 @@ type Npm struct {
 	Ctr    *dagger.Container
 }
 
-// NPM related tools that work with any given source directory. Tools include:
-// - InstallDependencies
+// NPM related tools that include:
 // - Coverage
+// One instance can be reused many times.
 func New(
 	// +optional
 	ctr *dagger.Container,
@@ -31,7 +31,7 @@ func (m *Npm) installDependencies(ctx context.Context, source *dagger.Directory)
 		WithExec([]string{"npm", "install", "--save-dev", "vitest", "@vitest/coverage-v8"})
 }
 
-// Coverage runs the Vitest coverage command and returns its stdout
+// Coverage runs the Vitest coverage command on the provided source directory and returns its stdout
 func (m *Npm) Coverage(ctx context.Context, source *dagger.Directory) (string, error) {
 	// Ensure dependencies are installed
 	ctr, err := m.installDependencies(ctx, source)
