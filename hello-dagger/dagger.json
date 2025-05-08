@@ -12,8 +12,8 @@
     },
     {
       "name": "trivy",
-      "source": "github.com/jpadams/daggerverse/trivy",
-      "pin": "44c178290a412483e785a436aabc46c707842a62"
+      "source": "http://github.com/grouville/daggerverse-jpadams/trivy@fix-trivy",
+      "pin": "7cfa3f42a4374cced218d5065824757acdf3d345"
     }
   ],
   "source": ".dagger"
