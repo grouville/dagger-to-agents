@@ -76,3 +76,8 @@ func (d *DaggerShellClient) Run(ctx context.Context) (err error) {
 	_, err = d.llm.Sync(ctx)
 	return err
 }
+
+// debug
+func (d *DaggerShellClient) Container() (ctr *dagger.Container, err error) {
+	return dag.Container(), nil
+}

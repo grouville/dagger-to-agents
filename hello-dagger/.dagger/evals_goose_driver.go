@@ -40,7 +40,8 @@ func (e *EvalRunner) gooseCtr(ctx context.Context, target *dagger.Directory) *da
 		WithMountedFile("/bin/dagger", e.DaggerCli).
 		WithUnixSocket("/var/run/docker.sock", e.DockerSocket).
 		WithSecretVariable("OPENAI_API_KEY", e.LLMKey).
-		WithWorkdir("/target")
+		WithWorkdir("/target").
+		WithNewFile("/target/llm-history", `{"working_dir":"/target","description":"Initial greeting exchange","message_count":2,"total_tokens":687,"input_tokens":673,"output_tokens":14,"accumulated_total_tokens":1373,"accumulated_input_tokens":1346,"accumulated_output_tokens":27}`, dagger.ContainerWithNewFileOpts{Permissions: 0644})
 }
 
 type GooseClient struct {
@@ -115,11 +116,31 @@ func (d *GooseClient) Run(ctx context.Context) (err error) {
 	// set the env state in the goose container, at this path
 	// the mcp.sh script will read it and set the env
 	// upon the dagger mcp command initialization, with the --with-env <path> flag
-	ctr := d.goose.WithNewFile("/tmp/path_to_happiness", string(data), dagger.ContainerWithNewFileOpts{Permissions: 0644})
+	ctr := d.goose.
+		WithNewFile("/tmp/path_to_happiness", string(data), dagger.ContainerWithNewFileOpts{Permissions: 0644})
 
 	// per attempt later
 	ctr = ctr.WithExec(sh(fmt.Sprintf("goose run -p llm-history -r -t %q", d.prompt)))
 
 	d.goose, err = ctr.Sync(ctx) // update the state of the container
 	return err
+}
+
+// wip
+func (d *GooseClient) Container() (ctr *dagger.Container, err error) {
+	// marshall it and write it to the file at a fixed location
+	data, err := json.Marshal(d.env)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal env: %w", err)
+	}
+
+	// set the env state in the goose container, at this path
+	// the mcp.sh script will read it and set the env
+	// upon the dagger mcp command initialization, with the --with-env <path> flag
+	ctr = d.goose.WithNewFile("/tmp/path_to_happiness", string(data), dagger.ContainerWithNewFileOpts{Permissions: 0644})
+
+	// per attempt later
+	// ctr = ctr.WithExec(sh(fmt.Sprintf("goose run -p llm-history -r -t %q", d.prompt)))
+
+	return ctr, nil
 }

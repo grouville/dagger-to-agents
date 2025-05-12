@@ -6,10 +6,6 @@
   },
   "dependencies": [
     {
-      "name": "DeveloperWorkspace",
-      "source": "../toolkit/developer-workspace"
-    },
-    {
       "name": "npm",
       "source": "github.com/grouville/dagger-to-agents/toolkit/npm@main",
       "pin": "b0e9fca74c9b80d0770a8eb8708c498f36dc66e3"

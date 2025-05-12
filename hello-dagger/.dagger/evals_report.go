@@ -35,6 +35,8 @@ type LLMTestClient interface {
 	GetEnv(ctx context.Context) *TestEnv
 	// Run the LLM client driver with the given context.
 	Run(ctx context.Context) error
+	// debug
+	Container() (*dagger.Container, error)
 }
 
 type LLMTestClientDriver interface {
@@ -48,6 +50,7 @@ type EvalContext struct {
 	driver LLMTestClientDriver
 }
 
+// Transform to session
 func (ec EvalContext) NewClient() LLMTestClient {
 	return ec.driver.NewTestClient(ec.runner)
 }

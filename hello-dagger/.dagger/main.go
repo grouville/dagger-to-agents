@@ -76,7 +76,6 @@ func (m *HelloDagger) RunEvals(
 	// +optional
 	models []string,
 ) (*EvalReport, error) {
-
 	ev := NewEvalRunner("gpt-4o", "", daggerCli, project, dockerSocket, llmKey)
 	r2, err := TrivyScan(ctx, EvalContext{
 		runner: ev,
@@ -88,4 +87,33 @@ func (m *HelloDagger) RunEvals(
 	}
 
 	return r2, nil
+}
+
+func (m *HelloDagger) RunEvalsDebug(
+	ctx context.Context,
+	// +defaultPath="/hello-dagger"
+	project *dagger.Directory,
+
+	// +optional
+	llmKey *dagger.Secret,
+	daggerCli *dagger.File,
+	dockerSocket *dagger.Socket,
+
+	// +optional
+	models []string,
+) (*dagger.Container, error) {
+	// same init
+	ev := NewEvalRunner("gpt-4o", "", daggerCli, project, dockerSocket, llmKey)
+	gd := GooseDriver{}
+	tc := gd.NewTestClient(ev)
+
+	jo := func(env *TestEnv) *TestEnv {
+		return env.WithStringOutput("imageRef", "Published docker image")
+	}
+
+	// Set the prompt
+	tc.SetEnv(ctx, jo)
+	tc.SetPrompt(ctx, "publish the hello dagger app")
+
+	return tc.Container()
 }
