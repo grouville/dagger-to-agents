@@ -76,53 +76,16 @@ func (m *HelloDagger) RunEvals(
 	// +optional
 	models []string,
 ) (*EvalReport, error) {
-	// var reports []*EvalReport
 
-	// default to all available models
-	// workaround as //+ default does not work with slices
-	// if models == nil {
-	// 	models = []string{
-	// 		"gpt-4o",
-	// 		// "gpt-4.1",
-	// 	}
-	// }
-
-	// for _, model := range models {
-	// 	// one evaluator struct per model
-
-	// // Eval #1
-	// r1, err := ev.NPMAudit(ctx, project)
-	// if err != nil {
-	// 	return nil, fmt.Errorf("model %s NPMAudit: %w", model, err)
-	// }
-	// reports = append(reports, r1)
-
-	// Eval #2
-
-	ev := NewEvalRunner("gpt-4o", "", daggerCli, project)
-	// r2, err := NpmAudit(ctx, EvalContext{
+	ev := NewEvalRunner("gpt-4o", "", daggerCli, project, dockerSocket, llmKey)
 	r2, err := TrivyScan(ctx, EvalContext{
 		runner: ev,
-		driver: DaggerShellDriver{},
-		// driver: GooseDriver{},
+		// driver: DaggerShellDriver{},
+		driver: GooseDriver{},
 	})
 	if err != nil {
 		return nil, fmt.Errorf("model %s TrivyScan: %w", "gpt-4o", err)
 	}
-	// 	reports = append(reports, r2)
-	// }
 
 	return r2, nil
 }
-
-// func (m *HelloDagger) Toto(
-// 	ctx context.Context,
-// ) (string, error) {
-
-// 	return daggerLLM.WithEnv(
-// 		dag.Env(dagger.EnvOpts{
-// 			Privileged: true,
-// 		}),
-// 	)
-// 	dag.LLM().WithPrompt(`Show me all the tools in a table format, with their name and description`).LastReply(ctx)
-// }

@@ -206,13 +206,15 @@ type EvalRunner struct {
 	Target *dagger.Directory
 }
 
-func NewEvalRunner(model string, systemPrompt string, daggerCli *dagger.File, target *dagger.Directory) *EvalRunner {
+func NewEvalRunner(model string, systemPrompt string, daggerCli *dagger.File, target *dagger.Directory, dockerSocket *dagger.Socket, llmKey *dagger.Secret) *EvalRunner {
 	return &EvalRunner{
 		Attempt:      1,
 		Model:        model,
 		SystemPrompt: systemPrompt,
 		DaggerCli:    daggerCli,
 		Target:       target,
+		DockerSocket: dockerSocket,
+		LLMKey:       llmKey,
 	}
 }
 
