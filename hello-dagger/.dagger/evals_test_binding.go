@@ -22,6 +22,10 @@ type TestBinding struct {
 // _ context.Context for parity with Dagger's binding API
 // AsString converts the stored value to string, returning an error if it’s not.
 func (b TestBinding) AsString(_ context.Context) (string, error) {
+	if b.Value == nil {
+		return "", fmt.Errorf("binding %q is nil", b.Key)
+	}
+
 	s, ok := b.Value.(string)
 	if !ok {
 		return "", fmt.Errorf("binding %q is not a string", b.Key)

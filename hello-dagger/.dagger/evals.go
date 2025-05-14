@@ -34,10 +34,10 @@ func TrivyScan(
 			{
 				`check for its vulnerabilities`,
 				func(env *TestEnv) *TestEnv {
-					return env.WithStringOutput("trivyOutput", "Trivy scan output")
+					return env.WithStringOutput("trivyOutputString", "Trivy scan output string")
 				},
 				func(ctx context.Context, t testing.TB, env *TestEnv) {
-					out, err := env.Output("trivyOutput").AsString(ctx)
+					out, err := env.Output("trivyOutputString").AsString(ctx)
 					require.NoError(t, err)
 
 					require.Contains(t, out, "Report")

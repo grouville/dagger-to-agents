@@ -1,0 +1,24 @@
+GOOSE_PROVIDER: ${GOOSE_PROVIDER}
+OPENAI_BASE_PATH: ${OPENAI_BASE_PATH}
+OPENAI_HOST: ${OPENAI_HOST}
+extensions:
+  dagger:
+    args: [
+      "-m",
+      "/target",
+      "mcp",
+      "--env-privileged",
+      "--env-dir",
+      "${ENV_SNAPSHOT_DIR}"
+    ]
+    cmd: /bin/dagger
+    enabled: true
+    name: dagger
+    envs:
+      OPENAI_API_KEY: foo
+      DAGGER_LOG_STDIN: /tmp/debug.stdin.log
+      DAGGER_LOG_STDOUT: /tmp/debug.stdout.log
+      DAGGER_LOG_STDERR: /tmp/debug.stderr.log
+    type: stdio
+    timeout: 300
+GOOSE_MODEL: ${GOOSE_MODEL}

@@ -20,8 +20,10 @@ type LLMTestClient interface {
 	// SetPrompt applies the given prompt and returns an updated driver instance and any error.
 	SetPrompt(ctx context.Context, prompt string)
 
-	// // History retrieves the message history.
-	// History(ctx context.Context) ([]string, error)
+	// History retrieves the message history.
+	History(ctx context.Context) ([]string, error)
+
+	// TODO -- but a bit more work
 	// // InputTokens retrieves the total input tokens used.
 	// InputTokens(ctx context.Context) (int, error)
 	// // OutputTokens retrieves the total output tokens used.
@@ -138,19 +140,19 @@ func withLLMReport(
 		}
 	}
 
-	// // Generate report using the final driver state
-	// fmt.Fprintln(reportMD, "### Message Log")
-	// fmt.Fprintln(reportMD)
-	// history, err := currentDriver.History(ctx)
-	// if err != nil {
-	// 	fmt.Fprintln(reportMD, "Failed to get history:", err)
-	// } else {
-	// 	numLines := len(history)
-	// 	width := len(fmt.Sprintf("%d", numLines)) // Calculate width for padding
-	// 	for i, line := range history {
-	// 		fmt.Fprintf(reportMD, "    %*d | %s\n", width, i+1, line)
-	// 	}
-	// }
+	// Generate report using the final driver state
+	fmt.Fprintln(reportMD, "### Message Log")
+	fmt.Fprintln(reportMD)
+	history, err := tc.History(ctx)
+	if err != nil {
+		fmt.Fprintln(reportMD, "Failed to get history:", err)
+	} else {
+		numLines := len(history)
+		width := len(fmt.Sprintf("%d", numLines)) // Calculate width for padding
+		for i, line := range history {
+			fmt.Fprintf(reportMD, "    %*d | %s\n", width, i+1, line)
+		}
+	}
 
 	// report.InputTokens, err = currentDriver.InputTokens(ctx)
 	// if err != nil {
@@ -168,8 +170,8 @@ func withLLMReport(
 	// fmt.Fprintln(reportMD, "* Output Tokens:", report.OutputTokens)
 	// fmt.Fprintln(reportMD)
 
-	// fmt.Fprintln(reportMD, "### Evaluation Result")
-	// fmt.Fprintln(reportMD)
+	fmt.Fprintln(reportMD, "### Evaluation Result")
+	fmt.Fprintln(reportMD)
 	if t.Failed() {
 		fmt.Fprintln(reportMD, t.Logs())
 		fmt.Fprintln(reportMD, "FAILED")
@@ -181,7 +183,7 @@ func withLLMReport(
 		report.Succeeded = true
 	}
 
-	// report.Report = reportMD.String()
+	report.Report = reportMD.String()
 
 	// toolsDoc, err := currentDriver.ToolsDoc(ctx)
 	// if err != nil {
@@ -207,12 +209,20 @@ type EvalRunner struct {
 
 	// The target directory to be used in the evaluation (temporary until it is automatically mounted)
 	Target *dagger.Directory
+
+	Provider string
+	BasePath string
+	Host     string
 }
 
 func NewEvalRunner(model string, systemPrompt string, daggerCli *dagger.File, target *dagger.Directory, dockerSocket *dagger.Socket, llmKey *dagger.Secret) *EvalRunner {
 	return &EvalRunner{
+		Model:    firstNonEmpty(model, "gpt-4.1"),
+		Provider: "openai",
+		BasePath: "v1/chat/completions",
+		Host:     "https://api.openai.com",
+
 		Attempt:      1,
-		Model:        model,
 		SystemPrompt: systemPrompt,
 		DaggerCli:    daggerCli,
 		Target:       target,
@@ -234,4 +244,25 @@ func (m *EvalRunner) WithModel(model string) *EvalRunner {
 func (m *EvalRunner) WithSystemPrompt(prompt string) *EvalRunner {
 	m.SystemPrompt = prompt
 	return m
+}
+
+func (r *EvalRunner) WithProvider(p string) *EvalRunner {
+	r.Provider = p
+	return r
+}
+func (r *EvalRunner) WithHost(h string) *EvalRunner {
+	r.Host = h
+	return r
+}
+func (r *EvalRunner) WithBasePath(bp string) *EvalRunner {
+	r.BasePath = bp
+	return r
+}
+
+// helper fallback function
+func firstNonEmpty(v, d string) string {
+	if v != "" {
+		return v
+	}
+	return d
 }

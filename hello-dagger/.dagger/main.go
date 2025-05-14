@@ -14,7 +14,7 @@ type HelloDagger struct{}
 // Publish the application container after building and testing it on-the-fly
 func (m *HelloDagger) Publish(
 	ctx context.Context,
-	// +defaultPath="/hello-dagger"
+	// +defaultPath="."
 	source *dagger.Directory,
 ) (string, error) {
 	_, err := m.Test(ctx, source)
@@ -27,7 +27,7 @@ func (m *HelloDagger) Publish(
 
 // Build the application container
 func (m *HelloDagger) Build(
-	// +defaultPath="/hello-dagger"
+	// +defaultPath="."
 	source *dagger.Directory,
 ) *dagger.Container {
 	build := m.BuildEnv(source).
@@ -41,7 +41,7 @@ func (m *HelloDagger) Build(
 // Return the result of running unit tests
 func (m *HelloDagger) Test(
 	ctx context.Context,
-	// +defaultPath="/hello-dagger"
+	// +defaultPath="."
 	source *dagger.Directory,
 ) (string, error) {
 	return m.BuildEnv(source).
@@ -51,7 +51,7 @@ func (m *HelloDagger) Test(
 
 // Build a ready-to-use development environment
 func (m *HelloDagger) BuildEnv(
-	// +defaultPath="/hello-dagger"
+	// +defaultPath="."
 	source *dagger.Directory,
 ) *dagger.Container {
 	nodeCache := dag.CacheVolume("node")
@@ -65,7 +65,7 @@ func (m *HelloDagger) BuildEnv(
 
 func (m *HelloDagger) RunEvals(
 	ctx context.Context,
-	// +defaultPath="/hello-dagger"
+	// +defaultPath="."
 	project *dagger.Directory,
 
 	// +optional
@@ -76,7 +76,7 @@ func (m *HelloDagger) RunEvals(
 	// +optional
 	models []string,
 ) (*EvalReport, error) {
-	ev := NewEvalRunner("gpt-4o", "", daggerCli, project, dockerSocket, llmKey)
+	ev := NewEvalRunner("gpt-4.1", "", daggerCli, project, dockerSocket, llmKey)
 	r2, err := TrivyScan(ctx, EvalContext{
 		runner: ev,
 		// driver: DaggerShellDriver{},
@@ -87,33 +87,4 @@ func (m *HelloDagger) RunEvals(
 	}
 
 	return r2, nil
-}
-
-func (m *HelloDagger) RunEvalsDebug(
-	ctx context.Context,
-	// +defaultPath="/hello-dagger"
-	project *dagger.Directory,
-
-	// +optional
-	llmKey *dagger.Secret,
-	daggerCli *dagger.File,
-	dockerSocket *dagger.Socket,
-
-	// +optional
-	models []string,
-) (*dagger.Container, error) {
-	// same init
-	ev := NewEvalRunner("gpt-4o", "", daggerCli, project, dockerSocket, llmKey)
-	gd := GooseDriver{}
-	tc := gd.NewTestClient(ev)
-
-	jo := func(env *TestEnv) *TestEnv {
-		return env.WithStringOutput("imageRef", "Published docker image")
-	}
-
-	// Set the prompt
-	tc.SetEnv(ctx, jo)
-	tc.SetPrompt(ctx, "publish the hello dagger app")
-
-	return tc.Container()
 }

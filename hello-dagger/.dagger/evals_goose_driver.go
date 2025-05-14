@@ -5,9 +5,14 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"os"
+	"strings"
 
 	"dagger/hello-dagger/internal/dagger"
 )
+
+// this const is also hardcoded in the goose-config.yaml file
+const ENV_SNAPSHOT_DIR = "/tmp/env_snapshot"
 
 // satisfy the LLMTestClientDriver interface
 type GooseDriver struct{}
@@ -16,32 +21,54 @@ func (GooseDriver) NewTestClient(ev *EvalRunner) LLMTestClient {
 	return NewGoose(ev)
 }
 
-//go:embed goose-config.yaml
-var gooseConfig string
-
-//go:embed mcp.sh
-var mcpSh string
+//go:embed goose-config.yaml.tmpl
+var gooseTmpl string
 
 func sh(s string) []string {
 	return []string{"sh", "-c", s}
 }
 
-func (e *EvalRunner) gooseCtr(ctx context.Context, target *dagger.Directory) *dagger.Container {
-	// utiliser ça pour faire un docker-in-docker
-	// dagger -c 'container | from debian | with-exec sh,-c,"apt update && apt-get install -y --no-install-recommends curl ca-certificates && curl -fsSL https://get.docker.io/ | sh" | with-mounted-file /bin/dagger $(host | file /home/guillaume/dagger/bin/dagger) | with-unix-socket /var/run/docker.sock $(host | unix-socket /var/run/docker.sock)  | terminal'
+// builds everything *except* the goose YAML
+func (e *EvalRunner) baseGooseCtr() *dagger.Container {
 	return dag.Container().
 		From("debian").
 		WithExec(sh(`apt-get update && apt-get install -y --no-install-recommends curl ca-certificates bzip2 libxcb1; rm -rf /var/{cache/apt,lib/apt/lists}/*`)).
 		WithExec(sh(`curl -fsSL "https://get.docker.io/" | sh`)).
 		WithExec(sh(`curl -fsSL "https://github.com/block/goose/releases/download/v1.0.20/download_cli.sh" | GOOSE_BIN_DIR=/usr/local/bin CONFIGURE=false bash`)).
-		WithNewFile("/root/.config/goose/config.yaml", gooseConfig).
-		WithNewFile("/tmp/mcp.sh", mcpSh, dagger.ContainerWithNewFileOpts{Permissions: 755}).
-		WithMountedDirectory("/target", target).
+		WithDirectory(ENV_SNAPSHOT_DIR, dag.Directory()).
+		WithMountedDirectory("/target", e.Target).
+		WithNewFile("/target/llm-history", `{"working_dir":"/target","description":"Initial greeting exchange","message_count":2,"total_tokens":687,"input_tokens":673,"output_tokens":14,"accumulated_total_tokens":1373,"accumulated_input_tokens":1346,"accumulated_output_tokens":27}`, dagger.ContainerWithNewFileOpts{Permissions: 0644}).
 		WithMountedFile("/bin/dagger", e.DaggerCli).
 		WithUnixSocket("/var/run/docker.sock", e.DockerSocket).
 		WithSecretVariable("OPENAI_API_KEY", e.LLMKey).
-		WithWorkdir("/target").
-		WithNewFile("/target/llm-history", `{"working_dir":"/target","description":"Initial greeting exchange","message_count":2,"total_tokens":687,"input_tokens":673,"output_tokens":14,"accumulated_total_tokens":1373,"accumulated_input_tokens":1346,"accumulated_output_tokens":27}`, dagger.ContainerWithNewFileOpts{Permissions: 0644})
+		WithNewFile("/system_prompt.md", "").
+		WithEnvVariable("GOOSE_SYSTEM_PROMPT_FILE_PATH", "/system_prompt.md").
+		WithWorkdir("/target")
+}
+
+// helper holds the substitution variables
+type gooseVars struct {
+	Model, Provider, Host, BasePath, SnapshotDir string
+}
+
+// render using os.Expand (simple, no third-party deps)
+func renderConfig(tpl string, v gooseVars) string {
+	return os.Expand(tpl, func(k string) string {
+		switch k {
+		case "GOOSE_MODEL":
+			return v.Model
+		case "GOOSE_PROVIDER":
+			return v.Provider
+		case "OPENAI_HOST":
+			return v.Host
+		case "OPENAI_BASE_PATH":
+			return v.BasePath
+		case "ENV_SNAPSHOT_DIR":
+			return v.SnapshotDir
+		default:
+			return ""
+		}
+	})
 }
 
 type GooseClient struct {
@@ -61,17 +88,32 @@ func NewGoose(ev *EvalRunner) LLMTestClient {
 	// 	daggerLLM = daggerLLM.Attempt(ev.Attempt)
 	// }
 
-	baseCtr := ev.gooseCtr(context.Background(), ev.Target)
+	base := ev.baseGooseCtr()
+
+	// collect substitution values
+	vars := gooseVars{
+		Model:       ev.Model,
+		Provider:    ev.Provider,
+		Host:        ev.Host,
+		BasePath:    ev.BasePath,
+		SnapshotDir: ENV_SNAPSHOT_DIR,
+	}
+
+	cfg := renderConfig(gooseTmpl, vars)
+
+	// mount the freshly-rendered YAML inside the container
+	base = base.WithNewFile("/root/.config/goose/config.yaml", cfg)
 
 	return &GooseClient{
-		goose: baseCtr,
+		goose: base,
 		env:   NewTestEnv(),
 	}
 }
 
 func (d *GooseClient) SetPrompt(ctx context.Context, prompt string) {
 	// append only prompt -- as the shell driver's behavior
-	d.prompt = d.prompt + " " + prompt
+	// d.prompt = d.prompt + " " + prompt // i think i'm wrong -- too weird
+	d.prompt = prompt
 }
 
 // ApplyEnv applies environment modifications using the provided function.
@@ -82,7 +124,7 @@ func (d *GooseClient) SetEnv(ctx context.Context, fn EnvModifierFunc) {
 // Retrieves the current environment following a test run.
 func (d *GooseClient) GetEnv(ctx context.Context) *TestEnv {
 	// 1. Read the JSON file generated inside the container.
-	content, err := d.goose.File("/tmp/declare/output").Contents(ctx)
+	content, err := d.goose.File(fmt.Sprintf("%s/output.json", ENV_SNAPSHOT_DIR)).Contents(ctx)
 	if err != nil {
 		panic(fmt.Errorf("failed to read goose outputs: %w", err))
 	}
@@ -115,15 +157,26 @@ func (d *GooseClient) Run(ctx context.Context) (err error) {
 
 	// set the env state in the goose container, at this path
 	// the mcp.sh script will read it and set the env
-	// upon the dagger mcp command initialization, with the --with-env <path> flag
+	// upon the dagger mcp command initialization, with the --with-dir <path> flag
 	ctr := d.goose.
-		WithNewFile("/tmp/path_to_happiness", string(data), dagger.ContainerWithNewFileOpts{Permissions: 0644})
+		WithNewFile(fmt.Sprintf("%s/input.json", ENV_SNAPSHOT_DIR), string(data), dagger.ContainerWithNewFileOpts{Permissions: 0644})
 
 	// per attempt later
 	ctr = ctr.WithExec(sh(fmt.Sprintf("goose run -p llm-history -r -t %q", d.prompt)))
 
 	d.goose, err = ctr.Sync(ctx) // update the state of the container
 	return err
+}
+
+// Retrieves the current environment following a test run.
+func (d *GooseClient) History(ctx context.Context) ([]string, error) {
+	content, err := d.goose.File("/target/llm-history").Contents(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read llm-history: %w", err)
+	}
+
+	// bad heuristic -- but for now it's enough
+	return strings.Split(content, "\n"), nil
 }
 
 // wip
@@ -137,7 +190,7 @@ func (d *GooseClient) Container() (ctr *dagger.Container, err error) {
 	// set the env state in the goose container, at this path
 	// the mcp.sh script will read it and set the env
 	// upon the dagger mcp command initialization, with the --with-env <path> flag
-	ctr = d.goose.WithNewFile("/tmp/path_to_happiness", string(data), dagger.ContainerWithNewFileOpts{Permissions: 0644})
+	ctr = d.goose.WithNewFile(fmt.Sprintf("%s/input.json", ENV_SNAPSHOT_DIR), string(data), dagger.ContainerWithNewFileOpts{Permissions: 0644})
 
 	// per attempt later
 	// ctr = ctr.WithExec(sh(fmt.Sprintf("goose run -p llm-history -r -t %q", d.prompt)))

@@ -67,7 +67,7 @@ func (d *DaggerShellClient) GetEnv(ctx context.Context) *TestEnv {
 }
 
 func (d *DaggerShellClient) SetEnv(ctx context.Context, modFn EnvModifierFunc) {
-	fmt.Errorf("modFn: %v", modFn)
+	_ = fmt.Errorf("modFn: %v", modFn)
 	after := modFn(FromDagger(d.llm.Env()))
 	d.llm = d.llm.WithEnv(after.ToDagger())
 }
