@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TrivyScan(
+func TestTrivyScan(
 	ctx context.Context,
 	ec EvalContext,
 ) (*EvalReport, error) {

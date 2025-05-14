@@ -78,7 +78,7 @@ func (m *HelloDagger) RunEvals(
 ) (*EvalReport, error) {
 	ev := NewEvalRunner("gpt-4.1", "", daggerCli, project, dockerSocket, llmKey)
 	// r2, err := TrivyScan(ctx, EvalContext{
-	r2, err := NpmAudit(ctx, EvalContext{
+	r2, err := TestTrivyScan(ctx, EvalContext{
 		runner: ev,
 		// driver: DaggerShellDriver{},
 		driver: GooseDriver{},
