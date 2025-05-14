@@ -62,8 +62,8 @@ func (d *DaggerShellClient) SetPrompt(ctx context.Context, prompt string) {
 
 // var MY_ENV *dagger.Env
 
-func (d *DaggerShellClient) GetEnv(ctx context.Context) *TestEnv {
-	return FromDagger(d.llm.Env())
+func (d *DaggerShellClient) GetEnv(ctx context.Context) (*TestEnv, error) {
+	return FromDagger(d.llm.Env()), nil
 }
 
 func (d *DaggerShellClient) SetEnv(ctx context.Context, modFn EnvModifierFunc) {

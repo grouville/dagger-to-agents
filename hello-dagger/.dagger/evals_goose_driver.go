@@ -24,6 +24,9 @@ func (GooseDriver) NewTestClient(ev *EvalRunner) LLMTestClient {
 //go:embed goose-config.yaml.tmpl
 var gooseTmpl string
 
+//go:embed dagger_system_prompt.md
+var daggerSystemPrompt string
+
 func sh(s string) []string {
 	return []string{"sh", "-c", s}
 }
@@ -41,7 +44,7 @@ func (e *EvalRunner) baseGooseCtr() *dagger.Container {
 		WithMountedFile("/bin/dagger", e.DaggerCli).
 		WithUnixSocket("/var/run/docker.sock", e.DockerSocket).
 		WithSecretVariable("OPENAI_API_KEY", e.LLMKey).
-		WithNewFile("/system_prompt.md", "").
+		WithNewFile("/system_prompt.md", daggerSystemPrompt).
 		WithEnvVariable("GOOSE_SYSTEM_PROMPT_FILE_PATH", "/system_prompt.md").
 		WithWorkdir("/target")
 }
@@ -122,29 +125,32 @@ func (d *GooseClient) SetEnv(ctx context.Context, fn EnvModifierFunc) {
 }
 
 // Retrieves the current environment following a test run.
-func (d *GooseClient) GetEnv(ctx context.Context) *TestEnv {
-	// 1. Read the JSON file generated inside the container.
-	content, err := d.goose.File(fmt.Sprintf("%s/output.json", ENV_SNAPSHOT_DIR)).Contents(ctx)
-	if err != nil {
-		panic(fmt.Errorf("failed to read goose outputs: %w", err))
+func (d *GooseClient) GetEnv(ctx context.Context) (*TestEnv, error) {
+	path := fmt.Sprintf("%s/output.json", ENV_SNAPSHOT_DIR)
+
+	file := d.goose.File(path)
+	if file == nil {
+		return nil, fmt.Errorf("snapshot output not found at %s", path)
 	}
 
-	// 2. Unmarshal into a slice of TestBinding (same shape as we exported).
+	content, err := file.Contents(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read goose outputs: %w", err)
+	}
+
 	var outs []TestBinding
 	if err := json.Unmarshal([]byte(content), &outs); err != nil {
-		panic(fmt.Errorf("failed to unmarshal goose outputs: %w", err))
+		return nil, fmt.Errorf("failed to unmarshal goose outputs: %w", err)
 	}
 
-	// 3. Merge results into the client’s current environment.
 	if d.env == nil {
 		d.env = NewTestEnv()
 	}
 	for _, b := range outs {
-		// Note: this export method from the engine only works with string values.
 		d.env.Outputs[b.Key] = b
 	}
 
-	return d.env
+	return d.env, nil
 }
 
 // Retrieves the current environment following a test run.
@@ -170,7 +176,12 @@ func (d *GooseClient) Run(ctx context.Context) (err error) {
 
 // Retrieves the current environment following a test run.
 func (d *GooseClient) History(ctx context.Context) ([]string, error) {
-	content, err := d.goose.File("/target/llm-history").Contents(ctx)
+	file := d.goose.File("/target/llm-history")
+	if file == nil {
+		return nil, fmt.Errorf("failed to get llm-history file")
+	}
+
+	content, err := file.Contents(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read llm-history: %w", err)
 	}

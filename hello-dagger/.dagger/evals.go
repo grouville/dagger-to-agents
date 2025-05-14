@@ -68,44 +68,31 @@ func NpmAudit(
 		ec,
 		[]withLLMReportStep{
 			{
-				`run the test coverage and save the output`,
+				`run the test coverage`,
 				func(env *TestEnv) *TestEnv {
 					return env.
-						WithStringOutput("npmAuditOutput", "The final result to store the NPM audit output").
-						WithDirectoryInput("workdir", ec.runner.Target, "the current project's directory")
+						WithStringOutput("npmAuditOutput", "The final result to store the NPM audit output")
+					// WithDirectoryInput("workdir", ec.runner.Target, "the current project's directory") // it is implied, in MCP
 				},
 				func(ctx context.Context, t testing.TB, env *TestEnv) {
 					out, err := env.Output("npmAuditOutput").AsString(ctx)
 					require.NoError(t, err)
 
-					// fmt.Fprintf(os.Stderr, "🔥NPM Audit: |%s|\n", out)
 					require.Contains(t, out, "HelloWorld.vue")
 				},
 			},
-			// {
-			// 	`check for its vulnerabilities`,
-			// 	func(env *dagger.Env) *dagger.Env {
-			// 		return env.WithStringOutput("trivyOutput", "Trivy scan output")
-			// 	},
-			// 	func(ctx context.Context, t testing.TB, env *dagger.Env) {
-			// 		out, err := env.Output("trivyOutput").AsString(ctx)
-			// 		require.NoError(t, err)
+			{
+				`Now improve the test coverage of TheWelcome.vue to 100%. You can copy some other examples present in the project and write the tests next to it. The test coverage should make sense and should work. Always test until the end AND continue until you have a working and passing test.`,
+				func(env *TestEnv) *TestEnv {
+					return env.WithStringOutput("trivyOutput", "Trivy scan output")
+				},
+				func(ctx context.Context, t testing.TB, env *TestEnv) {
+					out, err := env.Output("trivyOutput").AsString(ctx)
+					require.NoError(t, err)
 
-			// 		require.Contains(t, out, "Report")
-			// 	},
-			// },
-			// {
-			// 	`summarize the result and give me action items`,
-			// 	func(env *dagger.Env) *dagger.Env {
-			// 		return env.WithStringOutput("actionItems", "Action items list")
-			// 	},
-			// 	func(ctx context.Context, t testing.TB, env *dagger.Env) {
-			// 		out, err := env.Output("trivyOutput").AsString(ctx)
-			// 		require.NoError(t, err)
-			// 		// fmt.Fprintf(os.Stderr, "🥶debug: %s\n", out)
-			// 		require.Contains(t, out, "Vulnerability", "VULNERABILITY")
-			// 	},
-			// },
+					require.Contains(t, out, "Report")
+				},
+			},
 		}...,
 	)
 }

@@ -34,7 +34,8 @@ type LLMTestClient interface {
 	// SetEnv applies environment modifications using the provided function.
 	SetEnv(ctx context.Context, fn EnvModifierFunc)
 	// Retrieves the current environment following a test run.
-	GetEnv(ctx context.Context) *TestEnv
+	// GetEnv(ctx context.Context) *TestEnv
+	GetEnv(ctx context.Context) (*TestEnv, error)
 	// Run the LLM client driver with the given context.
 	Run(ctx context.Context) error
 	// debug
@@ -89,15 +90,20 @@ func withLLMReport(
 	for _, step := range steps {
 		var stepErr error
 
+		// 1. Apply env modifier if provided
 		if step.envOpt != nil {
 			tc.SetEnv(ctx, step.envOpt)
 		}
 
+		// 2. Apply prompt if still running
 		if !stop && step.prompt != "" {
 			tc.SetPrompt(ctx, step.prompt)
 		}
 
+		// 3. Execute the driver step
 		stepErr = tc.Run(ctx)
+
+		// 4. Assertions / checks – always run to capture state even on failure
 		// Run checks even if SetPrompt wasn't called (e.g., initial state check)
 		(func() {
 			// demarcate assertions from the eval
@@ -123,6 +129,8 @@ func withLLMReport(
 					fmt.Fprintln(reportMD, "PANIC:", x)
 					reportMD.Write(debug.Stack())
 					fmt.Fprintln(reportMD)
+					// t.FailNow()
+					t.Fail()
 				}
 			}()
 
@@ -131,7 +139,14 @@ func withLLMReport(
 
 			// run eval-specific assertions using the potentially updated driver
 			if step.check != nil {
-				step.check(ctx, t, tc.GetEnv(ctx))
+				env, err := tc.GetEnv(ctx)
+				if err != nil {
+					fmt.Fprintln(reportMD, "env snapshot error:", err)
+					t.Fail()
+					return
+				}
+
+				step.check(ctx, t, env)
 			}
 		}())
 
