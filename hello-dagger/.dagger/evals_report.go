@@ -14,6 +14,8 @@ import (
 	"go.opentelemetry.io/otel/codes"
 )
 
+type EvalFunc func(context.Context, EvalContext) (*EvalReport, error)
+
 type EnvModifierFunc func(*TestEnv) *TestEnv
 
 type LLMTestClient interface {
@@ -230,15 +232,15 @@ type EvalRunner struct {
 	Host     string
 }
 
-func NewEvalRunner(model string, systemPrompt string, daggerCli *dagger.File, target *dagger.Directory, dockerSocket *dagger.Socket, llmKey *dagger.Secret) *EvalRunner {
+func NewEvalRunner(daggerCli *dagger.File, target *dagger.Directory, dockerSocket *dagger.Socket, llmKey *dagger.Secret) *EvalRunner {
 	return &EvalRunner{
-		Model:    firstNonEmpty(model, "gpt-4.1"),
+		Model:    "gpt-4.1",
 		Provider: "openai",
 		BasePath: "v1/chat/completions",
 		Host:     "https://api.openai.com",
 
 		Attempt:      1,
-		SystemPrompt: systemPrompt,
+		SystemPrompt: "",
 		DaggerCli:    daggerCli,
 		Target:       target,
 		DockerSocket: dockerSocket,

@@ -10,6 +10,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// Tests you wanna iterate on
+var allEvals = []EvalFunc{
+	TestTrivyScan,
+	NpmAudit,
+}
+
 func TestTrivyScan(
 	ctx context.Context,
 	ec EvalContext,
@@ -26,6 +32,7 @@ func TestTrivyScan(
 				func(ctx context.Context, t testing.TB, env *TestEnv) {
 					out, err := env.Output("imageRef").AsString(ctx)
 					require.NoError(t, err)
+					require.NotEmpty(t, out)
 
 					fmt.Fprintf(os.Stderr, "ImageRef: %s\n", out)
 					require.Contains(t, out, "ttl.sh/hello-dagger-")

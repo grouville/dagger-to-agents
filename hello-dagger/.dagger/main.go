@@ -76,7 +76,9 @@ func (m *HelloDagger) RunEvals(
 	// +optional
 	models []string,
 ) (*EvalReport, error) {
-	ev := NewEvalRunner("gpt-4.1", "", daggerCli, project, dockerSocket, llmKey)
+	ev := NewEvalRunner(daggerCli, project, dockerSocket, llmKey)
+	ev = ev.WithModel("gpt-4.1")
+	ev = ev.WithSystemPrompt("")
 	// r2, err := TrivyScan(ctx, EvalContext{
 	r2, err := TestTrivyScan(ctx, EvalContext{
 		runner: ev,
@@ -89,3 +91,47 @@ func (m *HelloDagger) RunEvals(
 
 	return r2, nil
 }
+
+// func (m *HelloDagger) RunEvals(
+// 	ctx context.Context,
+// 	// +defaultPath="."
+// 	project *dagger.Directory,
+
+// 	// +optional
+// 	llmKey *dagger.Secret,
+// 	daggerCli *dagger.File,
+// 	dockerSocket *dagger.Socket,
+
+// 	// +optional
+// 	models []string,
+// 	drivers []string,
+// ) ([]*EvalReport, error) {
+// 	var reports []*EvalReport
+
+// 	keyDriver := map[string]LLMTestClientDriver{
+// 		"trivy": DaggerShellDriver{},
+// 		"goose": GooseDriver{},
+// 	}
+
+// 	for _, driver := range drivers {
+// 		d := keyDriver[driver]
+// 		for _, eval := range allEvals {
+// 			for _, model := range models {
+// 				ev := NewEvalRunner(daggerCli, project, dockerSocket, llmKey)
+// 				ev = ev.WithModel(model)
+// 				ev = ev.WithSystemPrompt("")
+
+// 				report, err := eval(ctx, EvalContext{
+// 					driver: d,
+// 					runner: ev,
+// 				})
+// 				if err != nil {
+// 					return nil, fmt.Errorf("failed to run eval: %w", err)
+// 				}
+// 				reports = append(reports, report)
+// 			}
+// 		}
+// 	}
+
+// 	return reports, nil
+// }
