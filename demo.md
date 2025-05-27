@@ -1,21 +1,21 @@
 # Demo 1
 
-### 1. [Follow quickstart](https://docs.dagger.io/quickstart/ci) OR `cd hello-dagger`
-### 2. `dagger_dev`
-### 3. shell mode demo
-__Aim__ => show the capabilities of the shell mode with useful example
+### 1. [Follow the quickstart](https://docs.dagger.io/quickstart/ci) or `cd hello-dagger`
+### 2. Run `dagger_dev`
+### 3. Shell mode demo
+**Aim**: demonstrate the capabilities of shell mode with a useful example
 
 > dagger install github.com/grouville/daggerverse/trivy
 
-## Prompts (to be pasted, as is)
-1. publish the hello dagger app
-1(BIS). publish it
-2. check for its vulnerabilities
-3. summarize the result and give me action items
+## Prompts (paste exactly as written)
+1. Publish the Hello Dagger app
+1(BIS). Publish it again
+2. Check for vulnerabilities
+3. Summarize the results and provide action items
 
-### 4.  MCP Mode Demo
+### 4. MCP mode demo
 
-> **Working setup at the moment**
+> **Working setup**
 
 ```yaml
 # Engine version:
@@ -56,4 +56,4 @@ GOOSE_MODE: auto
 
 goose version: v0.18.2
 
-Use the exact same prompt as above
+Use the exact same prompt as above.
